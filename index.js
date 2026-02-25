@@ -4,7 +4,6 @@ const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 const dns = require('dns');
-const urlParser = require('url');
 
 const port = process.env.PORT || 3000;
 
@@ -16,55 +15,43 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-
-let urlDatabase = [];
+let urlDatabase = {};
 let idCounter = 1;
-
 
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body.url;
 
-  
-  let urlObject;
   try {
-    urlObject = new URL(originalUrl);
-   
-    if (urlObject.protocol !== 'http:' && urlObject.protocol !== 'https:') {
+    const urlObj = new URL(originalUrl);
+    
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
       return res.json({ error: 'invalid url' });
     }
-  } catch (err) {
+
+    dns.lookup(urlObj.hostname, (err) => {
+      if (err) {
+        return res.json({ error: 'invalid url' });
+      }
+
+      const shortUrl = idCounter++;
+      urlDatabase[shortUrl] = originalUrl;
+
+      res.json({
+        original_url: originalUrl,
+        short_url: shortUrl
+      });
+    });
+  } catch (e) {
     return res.json({ error: 'invalid url' });
   }
-
-  // 2. Verify the domain actually exists
-  dns.lookup(urlObject.hostname, (err) => {
-    if (err) {
-      return res.json({ error: 'invalid url' });
-    } else {
-      // 3. Create entry and push to database
-      const shortUrl = idCounter++;
-      urlDatabase.push({ 
-        original_url: originalUrl, 
-        short_url: shortUrl 
-      });
-
-      res.json({ 
-        original_url: originalUrl, 
-        short_url: shortUrl 
-      });
-    }
-  });
 });
-
 
 app.get('/api/shorturl/:id', (req, res) => {
   const id = req.params.id;
+  const originalUrl = urlDatabase[id];
 
-
-  const entry = urlDatabase.find(item => item.short_url == id);
-
-  if (entry) {
-    return res.redirect(entry.original_url);
+  if (originalUrl) {
+    return res.redirect(originalUrl);
   } else {
     return res.json({ error: "No short URL found" });
   }
