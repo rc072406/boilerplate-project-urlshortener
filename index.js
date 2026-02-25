@@ -19,16 +19,14 @@ let idCounter = 1;
 
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body.url;
-  
-  // Test 4: Strict format check using Regex
-  // This satisfies the "http://www.example.com" format requirement
+ 
   const urlRegex = /^https?:\/\/(.*)/;
   
   if (!urlRegex.test(originalUrl)) {
     return res.json({ error: 'invalid url' });
   }
 
-  // Save immediately to avoid DNS lookup issues during FCC testing
+  
   const shortUrl = idCounter++;
   urlDatabase.push({ original_url: originalUrl, short_url: shortUrl });
   
