@@ -32,7 +32,7 @@ app.post('/api/shorturl', (req, res) => {
       res.json({ error: 'invalid url' });
     } else {
       const shortUrl = idCounter++;
-      urlDatabase.push({ original: originalUrl, short: shortUrl });
+      urlDatabase.push({ original_url: originalUrl, short_url: shortUrl });
       
       res.json({ 
         original_url: originalUrl, 
@@ -44,12 +44,12 @@ app.post('/api/shorturl', (req, res) => {
 
 app.get('/api/shorturl/:id', (req, res) => {
   const id = req.params.id;
-  const entry = urlDatabase.find(item => item.short === parseInt(id));
+  const entry = urlDatabase.find(item => item.short_url === Number(id));
   
   if (entry) {
-    res.redirect(entry.original);
+    return res.redirect(entry.original_url);
   } else {
-    res.json({ error: "No short URL found" });
+    return res.json({ error: "No short URL found" });
   }
 });
 
