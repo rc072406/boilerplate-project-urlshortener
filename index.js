@@ -33,14 +33,12 @@ app.post('/api/shorturl', (req, res) => {
     return res.json({ error: 'invalid url' });
   }
 
-  // dns.lookup requires just the hostname (e.g., "example.com")
   dns.lookup(parsedUrl.hostname, (err) => {
     if (err) {
-      // If DNS can't find the domain, return the error required by the test
+    
       return res.json({ error: 'invalid url' });
     }
 
-    // Check if we already have this URL to avoid duplicates
     let existingEntry = urlDatabase.find(entry => entry.original_url === originalUrl);
 
     if (existingEntry) {
@@ -50,7 +48,7 @@ app.post('/api/shorturl', (req, res) => {
       });
     }
 
-    // Create and save new entry
+    
     const newEntry = {
       original_url: originalUrl,
       short_url: urlCounter++
