@@ -38,7 +38,7 @@ app.post('/api/shorturl', (req, res) => {
 
 app.get('/api/shorturl/:id', (req, res) => {
   const id = req.params.id;
-  // Use loose equality (==) or Number() to match string param to numeric ID
+
   const entry = urlDatabase.find(item => item.short_url == id);
   
   if (entry) {
