@@ -5,7 +5,7 @@ const app = express();
 const dns = require('dns');
 const urlparser = require('url');
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 const urlDatabase = [];
 let urlCounter = 1;
@@ -21,21 +21,21 @@ app.get('/', function(req, res) {
 
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body.url;
+  const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
 
-  
+  if (!urlRegex.test(originalUrl)) {
+    return res.json({ error: 'invalid url' });
+  }
+
   let parsedUrl;
   try {
     parsedUrl = new URL(originalUrl);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return res.json({ error: 'invalid url' });
-    }
   } catch (err) {
     return res.json({ error: 'invalid url' });
   }
 
   dns.lookup(parsedUrl.hostname, (err) => {
     if (err) {
-    
       return res.json({ error: 'invalid url' });
     }
 
@@ -48,7 +48,6 @@ app.post('/api/shorturl', (req, res) => {
       });
     }
 
-    
     const newEntry = {
       original_url: originalUrl,
       short_url: urlCounter++
@@ -62,12 +61,10 @@ app.post('/api/shorturl', (req, res) => {
 
 app.get('/api/shorturl/:short_url', (req, res) => {
   const shortUrlParam = req.params.short_url;
-  const shortUrlId = parseInt(shortUrlParam, 10);
-
-  const urlEntry = urlDatabase.find(entry => entry.short_url === shortUrlId);
+  
+  const urlEntry = urlDatabase.find(entry => entry.short_url.toString() === shortUrlParam);
 
   if (urlEntry) {
-   
     return res.redirect(urlEntry.original_url);
   } else {
     return res.json({ error: 'No short URL found for the given input' });
