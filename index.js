@@ -1,12 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const app = express();
 const dns = require('dns');
-const urlparser = require('url');
+const { URL } = require('url');
+const app = express();
 
 const port = process.env.PORT || 5000;
-
 const urlDatabase = [];
 let urlCounter = 1;
 
@@ -18,7 +17,6 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body.url;
   const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
@@ -27,42 +25,38 @@ app.post('/api/shorturl', (req, res) => {
     return res.json({ error: 'invalid url' });
   }
 
-  let parsedUrl;
   try {
-    parsedUrl = new URL(originalUrl);
+    const parsedUrl = new URL(originalUrl);
+    dns.lookup(parsedUrl.hostname, (err) => {
+      if (err) {
+        return res.json({ error: 'invalid url' });
+      }
+
+      let existingEntry = urlDatabase.find(entry => entry.original_url === originalUrl);
+
+      if (existingEntry) {
+        return res.json({
+          original_url: existingEntry.original_url,
+          short_url: existingEntry.short_url
+        });
+      }
+
+      const newEntry = {
+        original_url: originalUrl,
+        short_url: urlCounter++
+      };
+
+      urlDatabase.push(newEntry);
+      res.json(newEntry);
+    });
   } catch (err) {
-    return res.json({ error: 'invalid url' });
+    res.json({ error: 'invalid url' });
   }
-
-  dns.lookup(parsedUrl.hostname, (err) => {
-    if (err) {
-      return res.json({ error: 'invalid url' });
-    }
-
-    let existingEntry = urlDatabase.find(entry => entry.original_url === originalUrl);
-
-    if (existingEntry) {
-      return res.json({
-        original_url: existingEntry.original_url,
-        short_url: existingEntry.short_url
-      });
-    }
-
-    const newEntry = {
-      original_url: originalUrl,
-      short_url: urlCounter++
-    };
-
-    urlDatabase.push(newEntry);
-    res.json(newEntry);
-  });
 });
-
 
 app.get('/api/shorturl/:short_url', (req, res) => {
   const shortUrlParam = req.params.short_url;
-  
-  const urlEntry = urlDatabase.find(entry => entry.short_url.toString() === shortUrlParam);
+  const urlEntry = urlDatabase.find(entry => entry.short_url === parseInt(shortUrlParam));
 
   if (urlEntry) {
     return res.redirect(urlEntry.original_url);
@@ -70,7 +64,6 @@ app.get('/api/shorturl/:short_url', (req, res) => {
     return res.json({ error: 'No short URL found for the given input' });
   }
 });
-
 
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
